@@ -181,23 +181,6 @@ def download():
                 "domain": ".youtube.com",
                 "expirationDate": 1784922842.245204,
                 "hostOnly": False,
-            {
-                "domain": ".youtube.com",
-                "expirationDate": 1781898846.5937,
-                "hostOnly": False,
-                "httpOnly": True,
-                "name": "__Secure-3PSIDTS",
-                "path": "/",
-                "sameSite": "no_restriction",
-                "secure": True,
-                "session": False,
-                "storeId": None,
-                "value": "sidts-CjEB5H03PztC_6JPouMsTrGnf1Qq5CXWxFRCNcBErrttfwKteY64Il25V1oYvZdyivDZEAA"
-            },
-            {
-                "domain": ".youtube.com",
-                "expirationDate": 1784922842.245204,
-                "hostOnly": False,
                 "httpOnly": True,
                 "name": "LOGIN_INFO",
                 "path": "/",
@@ -206,36 +189,6 @@ def download():
                 "session": False,
                 "storeId": None,
                 "value": "AFmmF2swRQIhAPyiQJx51OgzPg7AZqFOBO3af7k-kdfCBSE79XFbLntmAiAsciso_Vliyk5KwRTPbsIi9zyskciwuMZmkCTu5xoeLw:QUQ3MjNmeXVxeU13X1ZhNXdod0NRQmdvaGJlRlZuY0Y4TjVGNVZsTmN0anNXUkR4UDJUTnRtaF9feFUzZjRzdnZReGlOeExnUjVZVWs5OGluZ2E3ZjY2bDYxMzBkbGhaQzlteVU5ZXhfaFNvT1ZtRmlzVFgyTlp5bmMzYV9pY2JEVks0YUNFdWFtWlM2dU1WM3N4SU14QTlWcFJPeXBTcHNB"
-            },
-            {
-                "domain": ".youtube.com",
-                "expirationDate": 1784922841.247376,
-                "hostOnly": False,
-                "httpOnly": False,
-                "name": "PREF",
-                "path": "/",
-                "sameSite": None,
-                "secure": True,
-                "session": False,
-                "storeId": None,
-                "value": "f6=40000080&f7=4140&tz=Asia.Karachi&f4=10000&f5=20000"
-            },
-            {
-                "domain": ".youtube.com",
-                "expirationDate": 1765914858.180315,
-                "hostOnly": False,
-                "httpOnly": True,
-                "name": "VISITOR_INFO1_LIVE",
-                "partitionKey": {
-                    "hasCrossSiteAncestor": False,
-                    "topLevelSite": "https://youtube.com"
-                },
-                "path": "/",
-                "sameSite": "no_restriction",
-                "secure": True,
-                "session": False,
-                "storeId": None,
-                "value": "0HEG8Bkc9j4"
             }
         ]
         ydl_opts['cookiefile'] = 'cookies.txt'
@@ -270,4 +223,3 @@ def get_progress():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
