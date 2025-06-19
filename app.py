@@ -24,45 +24,19 @@ def progress_hook(d):
 def index():
     return render_template('index.html')
 
-@app.route('/get_formats', methods=['POST'])
-def get_formats():
-    data = request.json
-    url = data.get('url')
-    if not url:
-        return jsonify({'error': 'No URL provided'}), 400
-    ydl_opts = {'quiet': True, 'skip_download': True}
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info = ydl.extract_info(url, download=False)
-            # Show all video formats (with vcodec)
-            formats = [
-                {
-                    'format_id': f['format_id'],
-                    'ext': f['ext'],
-                    'resolution': f.get('resolution') or f.get('height'),
-                    'format_note': f.get('format_note'),
-                    'filesize': f.get('filesize')
-                }
-                for f in info['formats'] if f.get('vcodec') != 'none'
-            ]
-            return jsonify({'formats': formats, 'title': info.get('title', '')})
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
 
 @app.route('/download', methods=['POST'])
+
 def download():
     from flask import after_this_request
     data = request.json
     url = data.get('url')
-    format_id = data.get('format_id')
-    if not url or not format_id:
-        return jsonify({'error': 'Missing url or format_id'}), 400
+    if not url:
+        return jsonify({'error': 'Missing url'}), 400
     filename = f"{uuid.uuid4()}.mp4"
     filepath = os.path.join(DOWNLOAD_DIR, filename)
-    # Always merge with bestaudio
-    ydl_format = f"{format_id}+bestaudio"
     ydl_opts = {
-        'format': ydl_format,
+        'format': "bestvideo+bestaudio/best",
         'outtmpl': filepath,
         'quiet': True,
         'merge_output_format': 'mp4',
@@ -87,9 +61,10 @@ def download():
     finally:
         progress_data['status'] = 'idle'
 
+
 @app.route('/progress', methods=['GET'])
 def get_progress():
     return jsonify(progress_data)
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)

@@ -84,12 +84,7 @@
 <div class="container">
     <h2>YouTube Video Downloader</h2>
     <input type="text" id="url" placeholder="Enter YouTube video URL">
-    <button onclick="getFormats()">Get Quality Options</button>
-    <div id="formats">
-        <label for="quality">Select Quality:</label>
-        <select id="quality"></select>
-        <button onclick="downloadVideo()">Download</button>
-    </div>
+    <button onclick="downloadVideo()">Download Best Quality</button>
     <div id="progress-container">
         <label>Download Progress:</label>
         <progress id="progress-bar" value="0" max="1"></progress>
@@ -100,41 +95,8 @@
 <script>
 let progressInterval = null;
 
-function getFormats() {
-    const url = document.getElementById('url').value;
-    document.getElementById('message').innerText = '';
-    fetch('/get_formats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            document.getElementById('message').innerText = data.error;
-            document.getElementById('formats').style.display = 'none';
-            return;
-        }
-        const select = document.getElementById('quality');
-        select.innerHTML = '';
-        data.formats.forEach(f => {
-            const label = `${f.resolution || ''} ${f.ext} ${f.format_note || ''}`;
-            const option = document.createElement('option');
-            option.value = f.format_id;
-            option.text = label;
-            select.appendChild(option);
-        });
-        document.getElementById('formats').style.display = 'block';
-    })
-    .catch(err => {
-        document.getElementById('message').innerText = 'Error fetching formats.';
-        document.getElementById('formats').style.display = 'none';
-    });
-}
-
 function downloadVideo() {
     const url = document.getElementById('url').value;
-    const format_id = document.getElementById('quality').value;
     document.getElementById('message').innerText = '';
     document.getElementById('progress-container').style.display = 'block';
     document.getElementById('progress-bar').value = 0;
@@ -143,7 +105,7 @@ function downloadVideo() {
     fetch('/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, format_id })
+        body: JSON.stringify({ url })
     })
     .then(response => {
         clearInterval(progressInterval);
@@ -182,4 +144,4 @@ function updateProgress() {
 }
 </script>
 </body>
-</html> 
+</html>
