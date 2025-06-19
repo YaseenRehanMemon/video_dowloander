@@ -1,5 +1,10 @@
-from flask import Flask, request, jsonify, send_file, render_template, after_this_request
-import yt_dlp
+import os
+import uuid
+
+app = Flask(__name__, template_folder='templates')
+DOWNLOAD_DIR = 'downloads'
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+=======
 import os
 import uuid
 import json
@@ -7,27 +12,42 @@ import json
 app = Flask(__name__, template_folder='templates')
 DOWNLOAD_DIR = 'downloads'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-# Global variable to store progress
-progress_data = {'progress': 0, 'status': 'idle'}
-
-def progress_hook(d):
-    if d['status'] == 'downloading':
-        progress_data['progress'] = d.get('downloaded_bytes', 0) / max(d.get('total_bytes', 1), 1)
-        progress_data['status'] = 'downloading'
-    elif d['status'] == 'finished':
-        progress_data['progress'] = 1.0
-        progress_data['status'] = 'finished'
-    elif d['status'] == 'error':
++++++++ REPLACE
+------- SEARCH
+def download():
+    from flask import after_this_request
+    data = request.json
+    url = data.get('url')
+    if not url:
+        return jsonify({'error': 'Missing url'}), 400
+    filename = f"{uuid.uuid4()}.mp4"
+    filepath = os.path.join(DOWNLOAD_DIR, filename)
+    ydl_opts = {
+        'format': "bestvideo+bestaudio/best",
+        'outtmpl': filepath,
+        'quiet': True,
+        'merge_output_format': 'mp4',
+        'progress_hooks': [progress_hook],
+    }
+    progress_data['progress'] = 0
+    progress_data['status'] = 'downloading'
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        @after_this_request
+        def remove_file(response):
+            try:
+                os.remove(filepath)
+            except Exception:
+                pass
+            return response
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
         progress_data['status'] = 'error'
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-
-@app.route('/download', methods=['POST'])
-
+        return jsonify({'error': str(e)}), 500
+    finally:
+        progress_data['status'] = 'idle'
+=======
 def download():
     from flask import after_this_request
     data = request.json
@@ -47,6 +67,23 @@ def download():
     # Check if running in production mode
     if os.environ.get('FLASK_DEBUG') == '0':
         cookies = [
+            {
+                "domain": ".youtube.com",
+                "expirationDate": 1765914858.180423,
+                "hostOnly": False,
+                "httpOnly": True,
+                "name": "VISITOR_PRIVACY_METADATA",
+                "partitionKey": {
+                    "hasCrossSiteAncestor": False,
+                    "topLevelSite": "https://youtube.com"
+                },
+                "path": "/",
+                "sameSite": "no_restriction",
+                "secure": True,
+                "session": False,
+                "storeId": None,
+                "value": "CgJQSxIEGgAgLw%3D%3D"
+            },
             {
                 "domain": ".youtube.com",
                 "expirationDate": 1784922822.80772,
@@ -189,6 +226,36 @@ def download():
                 "session": False,
                 "storeId": None,
                 "value": "AFmmF2swRQIhAPyiQJx51OgzPg7AZqFOBO3af7k-kdfCBSE79XFbLntmAiAsciso_Vliyk5KwRTPbsIi9zyskciwuMZmkCTu5xoeLw:QUQ3MjNmeXVxeU13X1ZhNXdod0NRQmdvaGJlRlZuY0Y4TjVGNVZsTmN0anNXUkR4UDJUTnRtaF9feFUzZjRzdnZReGlOeExnUjVZVWs5OGluZ2E3ZjY2bDYxMzBkbGhaQzlteVU5ZXhfaFNvT1ZtRmlzVFgyTlp5bmMzYV9pY2JEVks0YUNFdWFtWlM2dU1WM3N4SU14QTlWcFJPeXBTcHNB"
+            },
+            {
+                "domain": ".youtube.com",
+                "expirationDate": 1784922841.247376,
+                "hostOnly": False,
+                "httpOnly": False,
+                "name": "PREF",
+                "path": "/",
+                "sameSite": None,
+                "secure": True,
+                "session": False,
+                "storeId": None,
+                "value": "f6=40000080&f7=4140&tz=Asia.Karachi&f4=10000&f5=20000"
+            },
+            {
+                "domain": ".youtube.com",
+                "expirationDate": 1765914858.180315,
+                "hostOnly": False,
+                "httpOnly": True,
+                "name": "VISITOR_INFO1_LIVE",
+                "partitionKey": {
+                    "hasCrossSiteAncestor": False,
+                    "topLevelSite": "https://youtube.com"
+                },
+                "path": "/",
+                "sameSite": "no_restriction",
+                "secure": True,
+                "session": False,
+                "storeId": None,
+                "value": "0HEG8Bkc9j4"
             }
         ]
         ydl_opts['cookiefile'] = 'cookies.txt'
@@ -215,12 +282,3 @@ def download():
         return jsonify({'error': str(e)}), 500
     finally:
         progress_data['status'] = 'idle'
-
-
-@app.route('/progress', methods=['GET'])
-def get_progress():
-    return jsonify(progress_data)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
