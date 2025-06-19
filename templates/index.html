@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Video Downloader</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            margin: 60px auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            padding: 32px 28px 24px 28px;
+        }
+        h2 {
+            text-align: center;
+            color: #2575fc;
+            margin-bottom: 24px;
+        }
+        input, select {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: #f3f6fa;
+            transition: border 0.2s;
+        }
+        input:focus, select:focus {
+            border: 1.5px solid #2575fc;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px 0;
+            background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(37, 117, 252, 0.08);
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #2575fc 0%, #6a11cb 100%);
+            transform: translateY(-2px) scale(1.03);
+        }
+        #formats { display: none; }
+        #progress-container {
+            margin: 18px 0 8px 0;
+            display: none;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 18px;
+            border-radius: 8px;
+            background: #e0e7ff;
+            accent-color: #2575fc;
+        }
+        #progress-percent {
+            float: right;
+            color: #2575fc;
+            font-weight: 600;
+        }
+        #message {
+            color: #e53935;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>YouTube Video Downloader</h2>
+    <input type="text" id="url" placeholder="Enter YouTube video URL">
+    <button onclick="getFormats()">Get Quality Options</button>
+    <div id="formats">
+        <label for="quality">Select Quality:</label>
+        <select id="quality"></select>
+        <button onclick="downloadVideo()">Download</button>
+    </div>
+    <div id="progress-container">
+        <label>Download Progress:</label>
+        <progress id="progress-bar" value="0" max="1"></progress>
+        <span id="progress-percent">0%</span>
+    </div>
+    <div id="message"></div>
+</div>
+<script>
+let progressInterval = null;
+
+function getFormats() {
+    const url = document.getElementById('url').value;
+    document.getElementById('message').innerText = '';
+    fetch('/get_formats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById('message').innerText = data.error;
+            document.getElementById('formats').style.display = 'none';
+            return;
+        }
+        const select = document.getElementById('quality');
+        select.innerHTML = '';
+        data.formats.forEach(f => {
+            const label = `${f.resolution || ''} ${f.ext} ${f.format_note || ''}`;
+            const option = document.createElement('option');
+            option.value = f.format_id;
+            option.text = label;
+            select.appendChild(option);
+        });
+        document.getElementById('formats').style.display = 'block';
+    })
+    .catch(err => {
+        document.getElementById('message').innerText = 'Error fetching formats.';
+        document.getElementById('formats').style.display = 'none';
+    });
+}
+
+function downloadVideo() {
+    const url = document.getElementById('url').value;
+    const format_id = document.getElementById('quality').value;
+    document.getElementById('message').innerText = '';
+    document.getElementById('progress-container').style.display = 'block';
+    document.getElementById('progress-bar').value = 0;
+    document.getElementById('progress-percent').innerText = '0%';
+    progressInterval = setInterval(updateProgress, 500);
+    fetch('/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, format_id })
+    })
+    .then(response => {
+        clearInterval(progressInterval);
+        document.getElementById('progress-bar').value = 1;
+        document.getElementById('progress-percent').innerText = '100%';
+        document.getElementById('progress-container').style.display = 'none';
+        if (!response.ok) return response.json().then(data => { throw new Error(data.error); });
+        return response.blob();
+    })
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+        clearInterval(progressInterval);
+        document.getElementById('progress-container').style.display = 'none';
+        document.getElementById('message').innerText = err.message || 'Download failed.';
+    });
+}
+
+function updateProgress() {
+    fetch('/progress')
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'downloading') {
+            document.getElementById('progress-bar').value = data.progress;
+            document.getElementById('progress-percent').innerText = Math.round(data.progress * 100) + '%';
+        }
+    });
+}
+</script>
+</body>
+</html> 
